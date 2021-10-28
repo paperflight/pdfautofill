@@ -6,12 +6,12 @@ Use data from excel sheets and fill the pdf with the same name of the sheet. The
 ## Usage
 Inspect the possible filling elements:
 
-   python autofill.py 'inspect' <pdf path>
+      python autofill.py 'inspect' <pdf path>
   
 Read data from active sheet:
    
-   python autofill.py 'read_excel' <excel path>
+      python autofill.py 'read_excel' <excel path>
 
 Fill PDF:
    
-   python autofill.py <excel path>
+      python autofill.py <excel path>
