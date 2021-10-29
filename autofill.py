@@ -12,6 +12,19 @@ ANNOT_FORM_text = '/Tx'         # ID for textbox
 SUBTYPE_KEY = '/Subtype'
 WIDGET_SUBTYPE_KEY = '/Widget'
 
+data_dict={
+    'Line4_DaytimeTelephoneNumber[0]':'Mouren',
+    'Pt1Line2c_MiddleName[0]':'Mail'
+}
+#data_dict={
+#}
+
+def string_escape(s, encoding='utf-8'):
+    return (s.encode('latin1')         # To bytes, required by 'unicode-escape'
+             .decode('unicode-escape') # Perform the actual octal-escaping decode
+             .encode('latin1')         # 1:1 mapping back to bytes
+             .decode(encoding))        # Decode original encoding
+
 def inspect(input_pdf_path):
     template_pdf=pdfrw.PdfReader(input_pdf_path)
     for page in template_pdf.pages:
@@ -19,6 +32,7 @@ def inspect(input_pdf_path):
         for annotation in annotations:
             if annotation[SUBTYPE_KEY]==WIDGET_SUBTYPE_KEY:
                 key=annotation[ANNOT_FIELD_KEY][1:-1]
+                key = str(bytes.fromhex(key).decode('utf-16'))
                 print(key)
 
 
@@ -29,6 +43,7 @@ def write_fillable_pdf(input_pdf_path,output_pdf_path,data_dict):
         for annotation in annotations:
             if annotation[SUBTYPE_KEY]==WIDGET_SUBTYPE_KEY:
                 key=annotation[ANNOT_FIELD_KEY][1:-1]
+                key = str(bytes.fromhex(key).decode('utf-16'))
                 try:
                     if annotation[ANNOT_FORM_type] == ANNOT_FORM_button:
                         annotation.update(
@@ -44,12 +59,11 @@ def write_fillable_pdf(input_pdf_path,output_pdf_path,data_dict):
                         
     pdfrw.PdfWriter().write(output_pdf_path,template_pdf)
     
-#data_dict={
-#    'form1[0].#subform[0].Line4_DaytimeTelephoneNumber[0]':'Mouren',
-#    'form1[0].#subform[0].Pt1Line2c_MiddleName[0]':'Mail'
-#}
-data_dict={
-}
+import pikepdf
+def decrpt(input_pdf_path):
+    pdf = pikepdf.open(input_pdf_path, allow_overwriting_input=True)
+    pdf.save(input_pdf_path)
+
 
 from openpyxl import load_workbook
 def read_excel(input_excel_path):
@@ -77,6 +91,8 @@ def run_all(input_excel_path):
 if __name__ == '__main__':
     if sys.argv[1] == 'inspect':
         inspect(sys.argv[2])
+    elif sys.argv[1] == 'decrpt':
+        decrpt(sys.argv[2])
     elif sys.argv[1] == 'write':
         write_fillable_pdf(sys.argv[2], sys.argv[3], data_dict)
     elif sys.argv[1] == 'read_excel':
