@@ -18,3 +18,7 @@ Read data from active sheet:
 Fill PDF:
    
       python autofill.py <excel path>
+
+The input PDF must follow the same codec, to convert codec, use:
+
+      python autofill.py 'decrypt' <pdf path>
