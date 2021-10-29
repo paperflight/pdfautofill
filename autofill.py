@@ -61,6 +61,9 @@ def inspect(input_pdf_path, input_excel_path=None):
 
 
 def write_fillable_pdf(input_pdf_path,output_pdf_path,data_dict):
+    if not os.path.isfile(input_pdf_path):
+        print('Could not find ' + input_pdf_path + '. Skip.')
+        return
     template_pdf=pdfrw.PdfReader(input_pdf_path)
     for page_number, page in enumerate(template_pdf.pages):
         annotations=page[ANNOT_KEY]
@@ -111,9 +114,13 @@ def run_all(input_excel_path):
             data_dict = {}
             sheet = workbook.worksheets[sheet_name_index]
             print('Extracting from ' + sheet.title)
-            for data in sheet.iter_rows(values_only=True):
-                print(data[0], data[1])
-                data_dict[data[0]] = data[1]
+            for data in sheet.iter_rows(min_col=1, max_col=3, values_only=True):
+                if data[1] is None:
+                    print(data[0], '')
+                    data_dict[data[0]] = ''
+                else:
+                    print(data[0], data[1])
+                    data_dict[data[0]] = data[1]
             write_fillable_pdf(path + sheet_name + '.pdf', path + sheet_name + '-fill.pdf', data_dict)
     
     
