@@ -13,8 +13,8 @@ SUBTYPE_KEY = '/Subtype'
 WIDGET_SUBTYPE_KEY = '/Widget'
 
 data_dict={
-    'Line4_DaytimeTelephoneNumber[0]':'Mouren',
-    'Pt1Line2c_MiddleName[0]':'Mail'
+    'page0_Line4_DaytimeTelephoneNumber[0]':'Mouren',
+    'page0_Pt1Line2c_MiddleName[0]':'Mail'
 }
 #data_dict={
 #}
@@ -25,25 +25,54 @@ def string_escape(s, encoding='utf-8'):
              .encode('latin1')         # 1:1 mapping back to bytes
              .decode(encoding))        # Decode original encoding
 
-def inspect(input_pdf_path):
+from openpyxl import Workbook
+def inspect(input_pdf_path, input_excel_path=None):
+    key_list = []
     template_pdf=pdfrw.PdfReader(input_pdf_path)
-    for page in template_pdf.pages:
+    for page_number, page in enumerate(template_pdf.pages):
         annotations=page[ANNOT_KEY]
         for annotation in annotations:
             if annotation[SUBTYPE_KEY]==WIDGET_SUBTYPE_KEY:
                 key=annotation[ANNOT_FIELD_KEY][1:-1]
-                key = str(bytes.fromhex(key).decode('utf-16'))
-                print(key)
+                try:
+                    key = str(bytes.fromhex(key).decode('utf-16'))
+                except ValueError:
+                    print('Please decrpt the file before inspect.')
+                    print('Using python autofill.py decrypt command')
+                cat_key = 'page' + str(page_number) + '_' +key
+                print(cat_key)
+                key_list.append(cat_key)
+    if input_excel_path is None:
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = os.path.basename(input_pdf_path)[0:-4]
+        for key_row, key in enumerate(key_list):
+            sheet['A'+str(key_row + 1)] = key
+        path = os.getcwd() + '/'
+        workbook.save(filename = path + os.path.basename(input_pdf_path)[0:-4] + '.xlsx')
+    else:
+        workbook = load_workbook(input_excel_path)
+        sheet_name = os.path.basename(input_pdf_path)[0:-4]
+        sheet = workbook.create_sheet(title=sheet_name)
+        for key_row, key in enumerate(key_list):
+            sheet['A'+str(key_row + 1)] = key
+        print('Data write to sheet ' + sheet.title)
+        workbook.save(filename = path + os.path.basename(input_excel_path))
 
 
 def write_fillable_pdf(input_pdf_path,output_pdf_path,data_dict):
     template_pdf=pdfrw.PdfReader(input_pdf_path)
-    for page in template_pdf.pages:
+    for page_number, page in enumerate(template_pdf.pages):
         annotations=page[ANNOT_KEY]
         for annotation in annotations:
             if annotation[SUBTYPE_KEY]==WIDGET_SUBTYPE_KEY:
                 key=annotation[ANNOT_FIELD_KEY][1:-1]
-                key = str(bytes.fromhex(key).decode('utf-16'))
+                try:
+                    key = str(bytes.fromhex(key).decode('utf-16'))
+                except ValueError:
+                    print('Please decrpt the file before inspect.')
+                    print('Using python autofill.py decrypt command')
+                key = 'page' + str(page_number) + '_' +key
                 try:
                     if annotation[ANNOT_FORM_type] == ANNOT_FORM_button:
                         annotation.update(
@@ -90,7 +119,10 @@ def run_all(input_excel_path):
     
 if __name__ == '__main__':
     if sys.argv[1] == 'inspect':
-        inspect(sys.argv[2])
+        if len(sys.argv) == 3:
+            inspect(sys.argv[2])
+        elif len(sys.argv) == 4:
+            inspect(sys.argv[2], sys.argv[3])
     elif sys.argv[1] == 'decrpt':
         decrpt(sys.argv[2])
     elif sys.argv[1] == 'write':
