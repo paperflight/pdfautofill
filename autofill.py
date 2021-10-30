@@ -20,6 +20,17 @@ data_dict={
 #}
 
 from openpyxl import Workbook
+def inspect_value(input_pdf_path):
+    key_list = []
+    template_pdf=pdfrw.PdfReader(input_pdf_path)
+    for page_number, page in enumerate(template_pdf.pages):
+        annotations=page[ANNOT_KEY]
+        for annotation in annotations:
+            if annotation[SUBTYPE_KEY]==WIDGET_SUBTYPE_KEY:
+                key=annotation[ANNOT_FIELD_KEY][1:-1]
+                print(key, '"' + str(annotation['/V']) + '"', '"' + str(annotation['/AS']) + '"')
+                key_list.append(key)
+        
 def inspect(input_pdf_path, input_excel_path=None):
     key_list = []
     template_pdf=pdfrw.PdfReader(input_pdf_path)
@@ -53,6 +64,7 @@ def write_fillable_pdf(input_pdf_path,output_pdf_path,data_dict):
         print('Could not find ' + input_pdf_path + '. Skip.')
         return
     template_pdf=pdfrw.PdfReader(input_pdf_path)
+    template_pdf.Root.AcroForm.update(pdfrw.PdfDict(NeedAppearances=pdfrw.PdfObject('true')))
     for page_number, page in enumerate(template_pdf.pages):
         annotations=page[ANNOT_KEY]
         for annotation in annotations:
@@ -98,11 +110,11 @@ def run_all(input_excel_path):
         print('Extracting from ' + sheet.title)
         for data in sheet.iter_rows(min_col=1, max_col=2, values_only=True):
             if data[1] is None:
-                print(data[0], '')
+                print(str(data[0]), '')
                 data_dict[data[0]] = ''
             else:
                 print(data[0], data[1])
-                data_dict[data[0]] = data[1]
+                data_dict[str(data[0])] = str(data[1])
         write_fillable_pdf(path + sheet_name + '.pdf', path + sheet_name + '-fill.pdf', data_dict)
     
     
@@ -112,6 +124,8 @@ if __name__ == '__main__':
             inspect(sys.argv[2])
         elif len(sys.argv) == 4:
             inspect(sys.argv[2], sys.argv[3])
+    elif sys.argv[1] == 'inspect_value':
+        inspect_value(sys.argv[2])
     elif sys.argv[1] == 'decrpt':
         decrpt(sys.argv[2])
     elif sys.argv[1] == 'write':
