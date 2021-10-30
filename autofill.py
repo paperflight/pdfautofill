@@ -19,12 +19,6 @@ data_dict={
 #data_dict={
 #}
 
-def string_escape(s, encoding='utf-8'):
-    return (s.encode('latin1')         # To bytes, required by 'unicode-escape'
-             .decode('unicode-escape') # Perform the actual octal-escaping decode
-             .encode('latin1')         # 1:1 mapping back to bytes
-             .decode(encoding))        # Decode original encoding
-
 from openpyxl import Workbook
 def inspect(input_pdf_path, input_excel_path=None):
     key_list = []
@@ -34,14 +28,8 @@ def inspect(input_pdf_path, input_excel_path=None):
         for annotation in annotations:
             if annotation[SUBTYPE_KEY]==WIDGET_SUBTYPE_KEY:
                 key=annotation[ANNOT_FIELD_KEY][1:-1]
-                try:
-                    key = str(bytes.fromhex(key).decode('utf-16'))
-                except ValueError:
-                    print('Please decrpt the file before inspect.')
-                    print('Using python autofill.py decrypt command')
-                cat_key = 'page' + str(page_number) + '_' +key
-                print(cat_key)
-                key_list.append(cat_key)
+                print(key)
+                key_list.append(key)
     if input_excel_path is None:
         workbook = Workbook()
         sheet = workbook.active
@@ -70,12 +58,6 @@ def write_fillable_pdf(input_pdf_path,output_pdf_path,data_dict):
         for annotation in annotations:
             if annotation[SUBTYPE_KEY]==WIDGET_SUBTYPE_KEY:
                 key=annotation[ANNOT_FIELD_KEY][1:-1]
-                try:
-                    key = str(bytes.fromhex(key).decode('utf-16'))
-                except ValueError:
-                    print('Please decrpt the file before inspect.')
-                    print('Using python autofill.py decrypt command')
-                key = 'page' + str(page_number) + '_' +key
                 try:
                     if annotation[ANNOT_FORM_type] == ANNOT_FORM_button:
                         annotation.update(
@@ -109,20 +91,19 @@ def read_excel(input_excel_path):
 
 def run_all(input_excel_path):
     path = os.getcwd() + '/'
-    workbook = load_workbook(filename=input_excel_path)
+    workbook = load_workbook(filename=input_excel_path, data_only=True)
     for sheet_name_index, sheet_name in enumerate(workbook.sheetnames):
-        if sheet_name != 'Custom Info':
-            data_dict = {}
-            sheet = workbook.worksheets[sheet_name_index]
-            print('Extracting from ' + sheet.title)
-            for data in sheet.iter_rows(min_col=1, max_col=3, values_only=True):
-                if data[1] is None:
-                    print(data[0], '')
-                    data_dict[data[0]] = ''
-                else:
-                    print(data[0], data[1])
-                    data_dict[data[0]] = data[1]
-            write_fillable_pdf(path + sheet_name + '.pdf', path + sheet_name + '-fill.pdf', data_dict)
+        data_dict = {}
+        sheet = workbook.worksheets[sheet_name_index]
+        print('Extracting from ' + sheet.title)
+        for data in sheet.iter_rows(min_col=1, max_col=2, values_only=True):
+            if data[1] is None:
+                print(data[0], '')
+                data_dict[data[0]] = ''
+            else:
+                print(data[0], data[1])
+                data_dict[data[0]] = data[1]
+        write_fillable_pdf(path + sheet_name + '.pdf', path + sheet_name + '-fill.pdf', data_dict)
     
     
 if __name__ == '__main__':
