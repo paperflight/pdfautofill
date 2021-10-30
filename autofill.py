@@ -8,7 +8,7 @@ ANNOT_KEY = '/Annots'           # key for all annotations within a page
 ANNOT_FIELD_KEY = '/T'          # Name of field. i.e. given ID of field
 ANNOT_FORM_type = '/FT'         # Form type (e.g. text/button)
 ANNOT_FORM_button = '/Btn'      # ID for buttons, i.e. a checkbox
-ANNOT_FORM_text = '/Tx'         # ID for textbox
+ANNOT_FORM_text = '/TU'         # ID for detail
 SUBTYPE_KEY = '/Subtype'
 WIDGET_SUBTYPE_KEY = '/Widget'
 
@@ -76,6 +76,7 @@ def inspect_print(input_pdf_path):
         
 def inspect(input_pdf_path, input_excel_path=None):
     key_list = []
+    text_list = []
     template_pdf=pdfrw.PdfReader(input_pdf_path)
     template_pdf.Root.AcroForm.update(pdfrw.PdfDict(NeedAppearances=pdfrw.PdfObject('true')))
     for page_number, page in enumerate(template_pdf.pages):
@@ -90,20 +91,26 @@ def inspect(input_pdf_path, input_excel_path=None):
                 key = 'page' + str(page_number) + '_' +key
                 print(key)
                 key_list.append(key)
+                if annotation[ANNOT_FORM_text] is not None:
+                    text_list.append(annotation[ANNOT_FORM_text])
+                else:
+                    text_list.append('')
     if input_excel_path is None:
         workbook = Workbook()
         sheet = workbook.active
         sheet.title = os.path.basename(input_pdf_path)[0:-4]
-        for key_row, key in enumerate(key_list):
+        for key_row, (key, text) in enumerate(zip(key_list, text_list)):
             sheet['A'+str(key_row + 1)] = key
-        path = os.getcwd() + '/'
+            sheet['C'+str(key_row + 1)] = text
+        print('Data write to sheet ' + sheet.title)
         workbook.save(filename = input_pdf_path[0:-4] + '.xlsx')
     else:
         workbook = load_workbook(input_excel_path)
         sheet_name = os.path.basename(input_pdf_path)[0:-4]
         sheet = workbook.create_sheet(title=sheet_name)
-        for key_row, key in enumerate(key_list):
+        for key_row, (key, text) in enumerate(zip(key_list, text_list)):
             sheet['A'+str(key_row + 1)] = key
+            sheet['C'+str(key_row + 1)] = text
         print('Data write to sheet ' + sheet.title)
         workbook.save(filename = input_excel_path)
 
@@ -125,6 +132,8 @@ def write_fillable_pdf(input_pdf_path,output_pdf_path,data_dict):
                     key = key.split('.')[-1]
                 key = 'page' + str(page_number) + '_' +key
                 try:
+                    if data_dict[key] == '':
+                        continue
                     if annotation[ANNOT_FORM_type] == ANNOT_FORM_button:
                         checkbox_dict = annotation['/AP']['/D']
                         on_key = ''
