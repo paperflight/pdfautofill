@@ -49,7 +49,7 @@ def inspect(input_pdf_path, input_excel_path=None):
         for key_row, key in enumerate(key_list):
             sheet['A'+str(key_row + 1)] = key
         path = os.getcwd() + '/'
-        workbook.save(filename = path + os.path.basename(input_pdf_path)[0:-4] + '.xlsx')
+        workbook.save(filename = input_pdf_path[0:-4] + '.xlsx')
     else:
         workbook = load_workbook(input_excel_path)
         sheet_name = os.path.basename(input_pdf_path)[0:-4]
@@ -57,7 +57,7 @@ def inspect(input_pdf_path, input_excel_path=None):
         for key_row, key in enumerate(key_list):
             sheet['A'+str(key_row + 1)] = key
         print('Data write to sheet ' + sheet.title)
-        workbook.save(filename = path + os.path.basename(input_excel_path))
+        workbook.save(filename = input_excel_path)
 
 
 def write_fillable_pdf(input_pdf_path,output_pdf_path,data_dict):
@@ -95,6 +95,7 @@ import pikepdf
 def decrpt(input_pdf_path):
     pdf = pikepdf.open(input_pdf_path, allow_overwriting_input=True)
     pdf.save(input_pdf_path)
+    print('Decrpyt Complete')
 
 
 from openpyxl import load_workbook
