@@ -9,7 +9,7 @@ pdfrw openxlsx
 ## Usage
 Inspect the possible filling elements:
 
-      python autofill.py 'inspect' <pdf path>
+      python autofill.py 'inspect' <pdf path> <excel path (optional)>
   
 Read data from active sheet:
    
