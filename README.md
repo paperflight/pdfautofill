@@ -4,7 +4,7 @@ An auto filling script from excel data to pdf
 Use data from excel sheets and fill the pdf with the same name of the sheet. The output is name-fill.pdf.
 
 ## Requirement
-pdfrw openxlsx
+pdfrw openxlsx pikepdf
 
 ## Usage
 Inspect the possible filling elements:
