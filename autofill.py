@@ -9,6 +9,7 @@ ANNOT_FIELD_KEY = '/T'          # Name of field. i.e. given ID of field
 ANNOT_FORM_type = '/FT'         # Form type (e.g. text/button)
 ANNOT_FORM_button = '/Btn'      # ID for buttons, i.e. a checkbox
 ANNOT_FORM_text = '/TU'         # ID for detail
+ANNOT_FORM_option = '/Opt'
 SUBTYPE_KEY = '/Subtype'
 WIDGET_SUBTYPE_KEY = '/Widget'
 
@@ -21,9 +22,9 @@ data_dict={
 
 from openpyxl import Workbook
 def inspect_value(input_pdf_path):
-    key_list = []
     template_pdf=pdfrw.PdfReader(input_pdf_path)
     for page_number, page in enumerate(template_pdf.pages):
+        print(page)
         annotations=page[ANNOT_KEY]
         for annotation in annotations:
             if annotation[SUBTYPE_KEY]==WIDGET_SUBTYPE_KEY:
@@ -41,38 +42,11 @@ def inspect_value(input_pdf_path):
                             on_key = on_keys[1::]
                             break
                     print(key, '"' + str(annotation['/V']) + '"', '"' + str(on_key) + '"')
+                elif ANNOT_FORM_option in annotation and annotation[ANNOT_FORM_option] !='':
+                    print(key, '"' + str(annotation['/V']) + '"' + '"' + str(annotation[ANNOT_FORM_option][0]) + '"')
                 else:
                     print(key, '"' + str(annotation['/V']) + '"')
-                key_list.append(key)
-                
-def inspect_print(input_pdf_path):
-    key_list = []
-    template_pdf=pdfrw.PdfReader(input_pdf_path)
-    template_pdf.Root.AcroForm.update(pdfrw.PdfDict(NeedAppearances=pdfrw.PdfObject('true')))
-    for page_number, page in enumerate(template_pdf.pages):
-        annotations=page[ANNOT_KEY]
-        for annotation in annotations:
-            if annotation[SUBTYPE_KEY]==WIDGET_SUBTYPE_KEY:
-                key=annotation[ANNOT_FIELD_KEY][1:-1]
-                try:
-                    key = str(bytes.fromhex(key).decode('utf-16'))
-                except ValueError:
-                    key = key.split('.')[-1]
-                if annotation[ANNOT_FORM_type] == ANNOT_FORM_button:
-                    checkbox_dict = annotation['/AP']['/D']
-                    on_key = ''
-                    for on_keys in checkbox_dict.keys():
-                        if on_keys != '/Off':
-                            on_key = on_keys[1::]
-                            break
-                    annotation.update(
-                        pdfrw.PdfDict(V=pdfrw.PdfName(on_key), AS=pdfrw.PdfName(on_key)) # default checkbox value is 'Off'
-                    )
-                else:
-                    annotation.update(
-                        pdfrw.PdfDict(V=pdfrw.PdfName(key)) # default checkbox value is 'Off'
-                    )
-    pdfrw.PdfWriter().write(input_pdf_path[0:-4] + '-investigate.pdf',template_pdf)
+                    
         
 def inspect(input_pdf_path, input_excel_path=None):
     key_list = []
@@ -140,7 +114,6 @@ def write_fillable_pdf(input_pdf_path,output_pdf_path,data_dict):
                         for on_keys in checkbox_dict.keys():
                             if on_keys != '/Off':
                                 on_key = on_keys[1::]
-                                print(on_key)
                                 break
                         if 'Yes' in data_dict[key] or 'yes' in data_dict[key] or 'On' in data_dict[key] or on_key == data_dict[key]:
                             annotation.update(
@@ -149,6 +122,16 @@ def write_fillable_pdf(input_pdf_path,output_pdf_path,data_dict):
                         else:
                              annotation.update(
                                 pdfrw.PdfDict(V=pdfrw.PdfName('Off'), AS=pdfrw.PdfName('Off')) # default checkbox value is 'Off'
+                            )
+                    elif ANNOT_FORM_option in annotation and annotation[ANNOT_FORM_option] != '':
+                        if any(data_dict[key] in sublist for sublist in annotation[ANNOT_FORM_option]):
+                            annotation.update(
+                                pdfrw.PdfDict(V='{}'.format(data_dict[key]))
+                            )
+                        else:
+                            print('Warning, ' + data_dict[key] + 'is not a avaliable option.')
+                            annotation.update(
+                                pdfrw.PdfDict(V='{}'.format(data_dict[key]))
                             )
                     else:
                         annotation.update(
@@ -189,10 +172,8 @@ def run_all(input_excel_path):
                 page_number = data[0].split('.')[-2]
                 key = 'page' + str(page_number[-2]) + '_' + data[0].split('.')[-1]
             if data[1] is None:
-                print(str(key), '')
                 data_dict[str(key)] = ''
             else:
-                print(key, data[1])
                 data_dict[str(key)] = str(data[1])
         write_fillable_pdf(path + sheet_name + '.pdf', path + sheet_name + '-fill.pdf', data_dict)
     
@@ -205,8 +186,6 @@ if __name__ == '__main__':
             inspect(sys.argv[2], sys.argv[3])
     elif sys.argv[1] == 'inspect_value':
         inspect_value(sys.argv[2])
-    elif sys.argv[1] == 'inspect_print':
-        inspect_print(sys.argv[2])
     elif sys.argv[1] == 'decrpt':
         decrpt(sys.argv[2])
     elif sys.argv[1] == 'write':
